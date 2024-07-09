@@ -1,26 +1,38 @@
 package com.example.ImageQualityCheckerApplication.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class ImageQualityService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    @Value("${flask.server.url}")
+    private String flaskServerUrl;
 
-    public String evaluateImageQuality(String imageUrl) {
-        String pythonApiUrl = "http://localhost:5000/evaluate";
+    private final RestTemplate restTemplate;
+
+    @Autowired
+    public ImageQualityService(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    public ResponseEntity<String> evaluateImageQuality(String imageUrl) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        String requestJson = "{\"imageUrl\": \"" + imageUrl + "\"}";
-        HttpEntity<String> entity = new HttpEntity<>(requestJson, headers);
+        // Prepare request body (in this case, you can just pass the imageUrl as query param)
+        HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity(pythonApiUrl, entity, String.class);
-        return response.getBody();
+        // Make HTTP GET request to Flask server's /evaluate endpoint
+        String evaluateUrl = flaskServerUrl + "/evaluate?imageUrl=" + imageUrl;
+        ResponseEntity<String> response = restTemplate.exchange(evaluateUrl, HttpMethod.GET, entity, String.class);
+
+        return response;
     }
 }
